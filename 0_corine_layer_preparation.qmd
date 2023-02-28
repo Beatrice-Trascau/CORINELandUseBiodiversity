@@ -1,0 +1,138 @@
+---
+title: "0. CORINE Lan Cover Layer Preparation"
+format: html
+editor: visual
+author: "Beatrice Trascau"
+date: 2023-02-27
+execute: 
+  echo: false
+---
+
+# Introduction
+
+This script contains code which loads, prepares, and explores CORINE land cover layers.
+
+```{r}
+#| label: Load packages
+#| message: false
+library(here)
+library(terra)
+library(sf)
+library(geodata)
+library(dplyr)
+library(janitor)
+library(ggpubr)
+library(networkD3)
+```
+
+```{r}
+#| label: Download CORINE Layers (2000, 2006, 2012, 2018) from Box
+#| message: false
+
+#Download files from box
+ #add download link
+corine_2000 <- "https://ntnu.box.com/shared/static/jbazjjr6h1bfijgyaap9sxn0xj2a9o3g.tif"
+corine_2006 <- "https://ntnu.box.com/shared/static/41fpya2y5nvnkxf32wf65wrtpze46a1n.tif"
+corine_2012 <- "https://ntnu.box.com/shared/static/50jq1yjrot1a6aeje1vcb5yljplmgwct.tif"
+corine_2018 <- "https://ntnu.box.com/shared/static/ic68b5v2k19jezcc5ysg8rtt9of24p38.tif"
+
+ #download the file
+download.file(corine_2000, "U2006_CLC2000_V2020_20u1.tif")
+download.file(corine_2006, "U2012_CLC2006_V2020_20u1.tif")
+download.file(corine_2012, "U2018_CLC2012_V2020_20u1.tif")
+download.file(corine_2018, "U2018_CLC2018_V2020_20u1.tif")
+```
+
+```{r}
+#| label: Read in CORINE layers
+#| message: false
+
+#Read in CORINE layers
+corine_2000 <- rast("U2006_CLC2000_V2020_20u1.tif")
+corine_2006 <- rast("U2012_CLC2006_V2020_20u1.tif")
+corine_2012 <- rast("U2018_CLC2012_V2020_20u1.tif")
+corine_2018 <- rast("U2018_CLC2018_V2020_20u1.tif")
+
+#Stack rasters
+corine_stack <- c(corine_2000, corine_2006,
+                  corine_2012, corine_2018)
+
+```
+
+```{r}
+#| label: Cut layers to Norway
+#| message: false
+
+#1. Download country shapefile ----
+norway <- geodata::gadm(country = "NOR", level = 0, 
+               path = tempdir(),
+               version = "latest")
+#Check shapefile
+plot(norway)
+
+#2. Reprojects shapefile to match projection of CORINE layers ----
+
+#Check projections of norway and CORINE layers
+crs(norway, proj = TRUE) #"+proj=longlat +datum=WGS84 +no_defs"
+crs(corine_2018, proj = TRUE) #"+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs"
+
+#Reproject Norway shapefile to the CORINE layers
+norway_corine_projection <- project(norway, crs(corine_2018))
+ #check projection
+crs(norway_corine_projection, proj = TRUE) #projection correct now
+
+#3. Crop & mask CORINE stack to Norway ----
+norway_corine_stack <- crop(corine_stack, norway_corine_projection,
+                            mask = TRUE)
+
+#4. Save the created file ----
+
+#Write file name
+raster_name <- paste0("norway_corine_stack.tif")
+
+#Write raster
+terra::writeRaster(norway_corine_stack,
+                   filename = raster_name)
+```
+
+```{r}
+#| label: Cut layers to Trøndelag
+#| message: false
+
+#1. Download country shapefile ----
+norway_counties <- geodata::gadm(country = "NOR", level = 1, 
+               path = tempdir(),
+               version = "latest")
+
+#Create Trøndelag from Nord-Trøndelag an Sør-Trøndelag
+ #extract Nord-Trøndelag and Sør-Trondelag shapes
+nord_trondelag <- norway_counties[norway_counties$NAME_1 == "Nord-Trøndelag", ]
+sor_trondelag <- norway_counties[norway_counties$NAME_1 == "Sør-Trøndelag", ]
+ #combine into Trøndelag
+trondelag <- nord_trondelag + sor_trondelag
+
+#2. Reprojects shapefile to match projection of CORINE layers ----
+
+#Check projections of norway and CORINE layers
+crs(trondelag, proj = TRUE) #"+proj=longlat +datum=WGS84 +no_defs"
+crs(corine_2018, proj = TRUE) #"+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs"
+
+#Reproject Norway shapefile to the CORINE layers
+trondelag_corine_projection <- project(trondelag, crs(corine_2018))
+ #check projection
+crs(trondelag_corine_projection, proj = TRUE) #projection correct now
+
+#3. Crop & mask CORINE stack to Norway ----
+trondelag_corine_stack <- crop(corine_stack, trondelag_corine_projection,
+                            mask = TRUE)
+
+#4. Save the created file ----
+
+#Write file name
+raster_name_trondelag <- paste0("trondelag_corine_stack.tif")
+
+#Write raster
+terra::writeRaster(trondelag_corine_stack,
+                   filename = raster_name_trondelag)
+
+```
