@@ -10,7 +10,7 @@ execute:
 
 # Introduction
 
-This script contains code which loads, prepares, and explores CORINE land cover layers.
+This script contains code which loads and prepares CORINE land cover layers for further exploration.
 
 ```{r}
 #| label: Load packages
