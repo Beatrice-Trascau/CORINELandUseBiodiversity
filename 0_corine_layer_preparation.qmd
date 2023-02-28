@@ -31,16 +31,19 @@ library(networkD3)
 
 #Download files from box
  #add download link
-corine_2000 <- "https://ntnu.box.com/shared/static/jbazjjr6h1bfijgyaap9sxn0xj2a9o3g.tif"
-corine_2006 <- "https://ntnu.box.com/shared/static/41fpya2y5nvnkxf32wf65wrtpze46a1n.tif"
-corine_2012 <- "https://ntnu.box.com/shared/static/50jq1yjrot1a6aeje1vcb5yljplmgwct.tif"
-corine_2018 <- "https://ntnu.box.com/shared/static/ic68b5v2k19jezcc5ysg8rtt9of24p38.tif"
+U2006_CLC2000_V2020_20u1 <- ("https://ntnu.box.com/shared/static/ffmbbb89aikwg64tg9ei30c8fnf7chl2.tif")
+
+U2012_CLC2006_V2020_20u1 <- ("https://ntnu.box.com/shared/static/2x6g9jaov5rex3u0xt3hq9mmy91d63ew.tif")
+
+U2018_CLC2012_V2020_20u1 <- ("https://ntnu.box.com/shared/static/ut1pcbnj7xgfwv3ptahu5c3krdy24l7d.tif")
+
+U2018_CLC2018_V2020_20u1 <- ("https://ntnu.box.com/shared/static/iub514rfjnkopg3nu4nc18j4axq5jfon.tif")
 
  #download the file
-download.file(corine_2000, "U2006_CLC2000_V2020_20u1.tif")
-download.file(corine_2006, "U2012_CLC2006_V2020_20u1.tif")
-download.file(corine_2012, "U2018_CLC2012_V2020_20u1.tif")
-download.file(corine_2018, "U2018_CLC2018_V2020_20u1.tif")
+download.file(U2006_CLC2000_V2020_20u1, "U2006_CLC2000_V2020_20u1.tif")
+download.file(U2012_CLC2006_V2020_20u1, "U2012_CLC2006_V2020_20u1.tif")
+download.file(U2018_CLC2012_V2020_20u1, "U2018_CLC2012_V2020_20u1.tif")
+download.file(U2018_CLC2018_V2020_20u1, "U2018_CLC2018_V2020_20u1.tif")
 ```
 
 ```{r}
