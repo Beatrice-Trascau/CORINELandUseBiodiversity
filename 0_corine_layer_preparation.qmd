@@ -1,5 +1,5 @@
 ---
-title: "0. CORINE Lan Cover Layer Preparation"
+title: "0. CORINE Land Cover Layer Preparation"
 format: html
 editor: visual
 author: "Beatrice Trascau"

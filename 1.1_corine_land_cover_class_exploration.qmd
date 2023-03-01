@@ -1,0 +1,194 @@
+---
+title: "1.1. CORINE Land Cover Class Exploration"
+format: html
+editor: visual
+author: "Beatrice Trascau"
+date: 2023-03-01
+execute: 
+  echo: false
+---
+
+# Introduction
+
+This script contains code which loads and explores CORINE Land Cover layers.
+
+## Aims
+
+The aim of this script is to visualize each Level 3 Land Cover Category contained within CORINE across all four years available, at a national level (Norway) and county level (Trondelag).
+
+```{r}
+#| label: Load packages
+#| message: false
+
+# 0. Packages ----
+library(here)
+library(terra)
+library(geodata)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+
+```
+
+# Methods
+
+Due to the high number of Level 3 Land Cover Categories an extensive number of maps would need to be created in order to visualise each layer across each year between Norway and TrÃ¸ndelag.
+
+Therefore, certain selected Level 3 Categories will be plotted only for one year, as no major changes are expected between the years. One such example is the "1.2.3. Port areas" class.
+
+For the classes which are considered important for our analysis (e.g. 2.3.1. Pastures), we will plot all four years of recording on a single map, using different colours to differentiate between the different years.
+
+```{r}
+#| label: Load Norway and TrÃ¸ndelag CORINE stacks
+#| message: false
+
+# 1.1. Load CORINE stacks for Norway and Trondelag ----
+ #Norway
+norway_corine <- rast("norway_corine_stack.tif")
+ #Trøndelag
+trondelag_corine <- rast("trondelag_corine_stack.tif")
+
+# 1.2. Convert layers to dataframes ----
+
+## 1.2.1. Norway CORINE layers to one df for all years
+ #This is done stepwise as memory does not allow executing everything at once 
+ #2000 
+norway_2000_df <- as.data.frame(norway_corine[[1]],
+                                        xy = TRUE) |>
+                            mutate(year = "2000", 
+                                   class = U2006_CLC2000_V2020_20u1) |>
+                            select(-U2006_CLC2000_V2020_20u1)
+ #2006
+norway_2006_df <- as.data.frame(norway_corine[[2]],
+                                        xy = TRUE) |>
+                            mutate(year = "2006", 
+                                   class = U2012_CLC2006_V2020_20u1) |>
+                            select(-U2012_CLC2006_V2020_20u1)
+ #2012
+norway_2012_df <- as.data.frame(norway_corine[[3]],
+                                        xy = TRUE) |>
+                            mutate(year = "2012",
+                                   class = U2018_CLC2012_V2020_20u1) |>
+                            select(-U2018_CLC2012_V2020_20u1)
+ #2018
+norway_2018_df <- as.data.frame(norway_corine[[4]],
+                                        xy = TRUE) |>
+                            mutate(year = "2018",
+                                   class = U2018_CLC2018_V2020_20u1) |>
+                            select(-U2018_CLC2018_V2020_20u1)
+
+## 1.2.2. Trondelag CORINE layers to one df for all years
+ #This is done stepwise as memory does not allow executing everything at once 
+ #2000 
+trondelag_2000_df <- as.data.frame(trondelag_corine[[1]],
+                                        xy = TRUE) |>
+                            mutate(year = "2000", 
+                                   class = U2006_CLC2000_V2020_20u1) |>
+                            select(-U2006_CLC2000_V2020_20u1)
+ #2006
+trondelag_2006_df <- as.data.frame(trondelag_corine[[2]],
+                                        xy = TRUE) |>
+                            mutate(year = "2006", 
+                                   class = U2012_CLC2006_V2020_20u1) |>
+                            select(-U2012_CLC2006_V2020_20u1)
+ #2012
+trondelag_2012_df <- as.data.frame(trondelag_corine[[3]],
+                                        xy = TRUE) |>
+                            mutate(year = "2012",
+                                   class = U2018_CLC2012_V2020_20u1) |>
+                            select(-U2018_CLC2012_V2020_20u1)
+ #2018
+trondelag_2018_df <- as.data.frame(trondelag_corine[[4]],
+                                        xy = TRUE) |>
+                            mutate(year = "2018",
+                                   class = U2018_CLC2018_V2020_20u1) |>
+                            select(-U2018_CLC2018_V2020_20u1)
+
+# 1.3. Norway and Trondelag Shapefiles ----
+## 1.3.1. Norway
+norway <- geodata::gadm(country = "NOR", level = 0, 
+                        path = tempdir(),
+                        version = "latest")
+
+ #Check shapefile
+plot(norway)
+
+#Check projections
+crs(norway, proj = TRUE) #"+proj=longlat +datum=WGS84 +no_defs"
+crs(norway_corine[[1]], proj = TRUE) #"+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs"
+
+#Reproject Norway shapefile to the CORINE layers
+norway_corine_projction <- project(norway, crs(norway_corine[[1]]))
+ #check projection
+crs(norway_corine_projction, proj = TRUE)
+
+## 1.3.2. Trondelag
+#Get Norway shapefile
+norway_county <- geodata::gadm(country = "NOR", level = 1, 
+                        path = tempdir(),
+                        version = "latest")
+
+#Create Trondelag from Nord-Trondelag an Sor-Trondelag
+ #extract Nord-Trondelag and Sor-Trondelag shapes
+nord_trondelag <- norway_county[norway_county$NAME_1 == "Nord-Trøndelag", ]
+sor_trondelag <- norway_county[norway_county$NAME_1 == "Sør-Trøndelag", ]
+
+ #combine into Trøndelag
+trondelag <- nord_trondelag + sor_trondelag
+
+#Reproject to the layers
+ #check projections
+crs(trondelag, proj = TRUE) #"+proj=longlat +datum=WGS84 +no_defs"
+crs(norway_corine[[1]], proj = TRUE) #"+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs"
+
+#Reproject Norway shapefile to the CORINE layers
+trondelag_corine_projection <- project(trondelag, 
+                                       crs(norway_corine[[1]]))
+ #check projection
+crs(trondelag_corine_projection, proj = TRUE)
+```
+
+# Results
+
+## 1.1. Urban fabric
+
+### 1.1.1. Continuous urban fabric
+
+This class is assigned when \>80% of the surface area is occupied by urban structures and transport networks and impermeable features. This is the class that refers to heavily urbanised areas.
+
+```{r}
+#| label: Maps for 1.1.1. Continuous urban fabric - Norway
+#| message: false
+
+#Create Norway df for all 4 years
+cont_urban_norway <- rbind(norway_2000_df |> 
+                             filter(class == 1),
+                           norway_2006_df |> 
+                             filter(class == 1),
+                           norway_2012_df |> 
+                             filter(class == 1),
+                           norway_2018_df |> 
+                             filter(class == 1))
+
+#Create Trøndelag df for all 4 years
+cont_urban_trondelag <- rbind(trondelag_2000_df |> 
+                             filter(class == 1),
+                           trondelag_2006_df |> 
+                             filter(class == 1),
+                           trondelag_2012_df |> 
+                             filter(class == 1),
+                           trondelag_2018_df |> 
+                             filter(class == 1)) |>
+  mutate(year = as.factor(year))
+
+#Plot
+ggplot(data = cont_urban_norway)+
+  geom_raster(aes(x = x, y = y, fill = as.factor(year)))+
+  scale_fill_manual(values = c("#5CC8FF", "#93867F",
+                               "#343633", "#7D70BA"),
+                    labels = c("2000", "2006",
+                               "2012", "2018"),
+                    name = "Continuous Urban Fabric")+
+  geom_spat(data = norway_corine_projction)+
+  theme_void()
+```
